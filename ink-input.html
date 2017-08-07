@@ -1,0 +1,116 @@
+<link rel="import" href="../polymer/polymer-element.html">
+<link rel="import" href="../polymer/lib/mixins/gesture-event-listeners.html">
+<link rel="import" href="script-imports.html">
+<dom-module id="ink-input">
+  <template>
+    <style>
+       :host {
+        display: block;
+        width: 640px;
+        touch-action:pinch-zoom;
+      }
+
+      canvas {
+        background: lightgrey;
+        touch-action:pinch-zoom;
+      }
+
+    </style>
+    <canvas id="canvas" width$="[[width]]" height$="[[height]]" viewBox$="[[viewBox]]">
+    </canvas>
+  </template>
+  <script>
+    class InkInput extends Polymer.Element {
+      static get is() {
+        return 'ink-input';
+      }
+
+      static get properties() {
+        return {
+          currentPath: {
+            type: Object,
+            value: {}
+          },
+          width: {
+            type: Number,
+            reflectToAttribute: true,
+            value: () => 640
+          },
+          height: {
+            type: Number,
+            reflectToAttribute: true,
+            value: () => 320
+          },
+          resolutionMultiplier: {
+            type: Number,
+            value: () => 1
+          },
+          viewBox: {
+            type: String,
+            computed: 'computeViewBox(width,height, resolutionMultiplier)'
+          },
+          title: {
+            type: String,
+            value: () => ''
+          },
+          inkColor: {
+            type: Object,
+            value: () => "black"
+          }
+        }
+      }
+      computeViewBox(width,height, resMul) {
+        return `0 0 ${width*resMul} ${height*resMul}`
+      }
+      ready() {
+        super.ready();
+        // paper.install(this)
+        paper.setup(this.$.canvas)
+
+        this.$.canvas.addEventListener('pointerdown', (e) => {
+          if(e.pointerType != "pen") {
+            return
+          }
+          let point = new paper.Point({
+            x: e.offsetX,
+            y: e.offsetY
+          })
+          point.pressure = e.pressure
+          this.set('currentPath', new paper.Path({
+            segments: [point],
+            strokeColor: this.inkColor,
+            fullySelected: false
+          }))
+        })
+        this.$.canvas.addEventListener('pointermove', (e) => {
+          if(e.pointerType != "pen") {
+            return
+          }
+          let point = new paper.Point({
+            x: e.offsetX,
+            y: e.offsetY
+          })
+          point.pressure = e.pressure
+          // console.log(e)
+          this.currentPath.add(point);
+        })
+        this.$.canvas.addEventListener('pointerup', (e) => {
+          if(e.pointerType != "pen") {
+            return
+          }
+          let point = new paper.Point({
+            x: e.offsetX,
+            y: e.offsetY
+          })
+          point.pressure = e.pressure
+          this.currentPath.add(point);
+          this.currentPath.simplify();
+
+          // let arrayOfPaths = Array(this.currentPath.segments.length).map(_ => new paper.Path());
+
+        })
+      }
+    }
+    window.customElements.define(InkInput.is, InkInput)
+  </script>
+</dom-module>
