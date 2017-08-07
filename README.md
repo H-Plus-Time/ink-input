@@ -18,3 +18,11 @@ Currently pen-exclusive.
 ```html
 <ink-input></ink-input>
 ```
+
+# Roadmap
+
+* Detect and support mouse pointerType
+* Add ink-well color selection element
+* Expose attribute to allow or disallow touch input
+* Add pressure data tracking, reflection to path styles
+* Add serialize to json
