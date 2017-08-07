@@ -4,3 +4,17 @@
 A collection of handwriting input elements.
 
 Currently pen-exclusive.
+<!--
+```
+<custom-element-demo>
+  <template>
+    <link rel="import" href="ink-input.html">
+    <next-code-block></next-code-block>
+  </template>
+</custom-element-demo>
+```
+-->
+
+```html
+<ink-input></ink-input>
+```
