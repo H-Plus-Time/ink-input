@@ -16,7 +16,7 @@
       }
 
     </style>
-    <canvas id="canvas" width$="[[width]]" height$="[[height]]" viewBox$="[[viewBox]]">
+    <canvas oncontextmenu="return false;" id="canvas" width$="[[width]]" height$="[[height]]" viewBox$="[[viewBox]]">
     </canvas>
   </template>
   <script>
@@ -55,14 +55,17 @@
             computed: 'computeViewBox(width,height, resolutionMultiplier)'
           },
           title: {
-            type: String,
-            value: () => ''
+            type: String
           },
           inkColor: {
             type: Object,
             value: () => "black"
           },
           layers: {
+            type: Object,
+            value: () => ({})
+          },
+          paper: {
             type: Object,
             value: () => ({})
           }
@@ -77,11 +80,26 @@
       computeViewBox(width,height, resMul) {
         return `0 0 ${width*resMul} ${height*resMul}`
       }
+      clear() {
+        this.paper.project.layers.map(l => l.children).reduce((p1,p2) => p1.concat(p2), [])
+          .map(p => p.remove())
+      }
+      download() {
+        let svgData = this.paper.project.exportSVG().outerHTML;
+        let svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'})
+        let svgUrl = URL.createObjectURL(svgBlob);
+        let downloadLink = document.createElement('a');
+        downloadLink.download = this.title ? `${this.title}.svg` : `${Math.round(new Date().getTime()*1000)}.svg`
+        downloadLink.href = svgUrl;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+      }
       ready() {
         super.ready();
-        // paper.install(this)
+        paper.install(this.paper)
         paper.setup(this.$.canvas)
-        this.layers.ballpoint = paper.project.activeLayer;
+        this.layers.ballpoint = this.paper.project.activeLayer;
         this.layers.eraser = new paper.Layer();
         this.layers.ballpoint.activate();
         this.$.canvas.addEventListener('pointerdown', (e) => {
@@ -128,9 +146,9 @@
           this.currentPath.add(point);
           this.currentPath.simplify();
           if(this.tool == "eraser") {
-            paper.project.layers.filter(l => l._id != paper.project.activeLayer._id)
+            this.paper.project.layers.filter(l => l._id != this.paper.project.activeLayer._id)
               .map(l => l.children).reduce((l1, l2) => l1.concat(l2), [])
-              .filter(p => paper.project.activeLayer.intersects(p))
+              .filter(p => this.paper.project.activeLayer.intersects(p))
               .map(p => p.remove())
             
             this.currentPath.remove()
