@@ -27,6 +27,11 @@
 
       static get properties() {
         return {
+          tool: {
+            type: String,
+            value: () => "ballpoint",
+            observer: 'observeTool'
+          },
           currentPath: {
             type: Object,
             value: {}
@@ -56,7 +61,17 @@
           inkColor: {
             type: Object,
             value: () => "black"
+          },
+          layers: {
+            type: Object,
+            value: () => ({})
           }
+        }
+      }
+      observeTool(newVal, oldVal) {
+        if(Object.keys(this.layers).indexOf(newVal) != -1) {
+          // activate the layer
+          this.layers[newVal].activate()
         }
       }
       computeViewBox(width,height, resMul) {
@@ -66,7 +81,9 @@
         super.ready();
         // paper.install(this)
         paper.setup(this.$.canvas)
-
+        this.layers.ballpoint = paper.project.activeLayer;
+        this.layers.eraser = new paper.Layer();
+        this.layers.ballpoint.activate();
         this.$.canvas.addEventListener('pointerdown', (e) => {
           if(e.pointerType != "pen") {
             return
@@ -75,12 +92,20 @@
             x: e.offsetX,
             y: e.offsetY
           })
-          point.pressure = e.pressure
-          this.set('currentPath', new paper.Path({
-            segments: [point],
-            strokeColor: this.inkColor,
-            fullySelected: false
-          }))
+          var config = {
+            segment: [point],
+            fullySelected: false,
+            strokeColor: this.inkColor
+          }
+          if(this.tool == "eraser") {
+            config = {
+              segment: [point],
+              strokeColor: "white",
+              strokeWidth: 15
+            }
+          }
+          // will be created in currently activated layer
+          this.set('currentPath', new paper.Path(config))
         })
         this.$.canvas.addEventListener('pointermove', (e) => {
           if(e.pointerType != "pen") {
@@ -90,8 +115,6 @@
             x: e.offsetX,
             y: e.offsetY
           })
-          point.pressure = e.pressure
-          // console.log(e)
           this.currentPath.add(point);
         })
         this.$.canvas.addEventListener('pointerup', (e) => {
@@ -102,10 +125,18 @@
             x: e.offsetX,
             y: e.offsetY
           })
-          point.pressure = e.pressure
           this.currentPath.add(point);
           this.currentPath.simplify();
-
+          if(this.tool == "eraser") {
+            paper.project.layers.filter(l => l._id != paper.project.activeLayer._id)
+              .map(l => l.children).reduce((l1, l2) => l1.concat(l2), [])
+              .filter(p => paper.project.activeLayer.intersects(p))
+              .map(p => p.remove())
+            
+            this.currentPath.remove()
+            // get intersections with all other layers
+            // delete all paths in list
+          }
           // let arrayOfPaths = Array(this.currentPath.segments.length).map(_ => new paper.Path());
 
         })
